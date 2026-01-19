@@ -7,7 +7,7 @@
     "repodm": "./index.js"
   },
   "scripts": {
-    "start": "node index.js"
+    "start": "node --max-old-space-size=8192 index.js"
   },
   "dependencies": {
     "commander": "^9.4.1",

@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env node --max-old-space-size=4096
 
 const { program } = require('commander');
 const axios = require('axios');
@@ -65,6 +65,11 @@ class RepoComparer {
   }
 
   normalizeCode(content) {
+    // Limit content size to prevent memory issues
+    if (content.length > 10000) {
+      content = content.substring(0, 10000);
+    }
+    
     return content
       .replace(/\/\*[\s\S]*?\*\//g, '') // Remove block comments
       .replace(/\/\/.*$/gm, '') // Remove line comments
@@ -76,13 +81,51 @@ class RepoComparer {
   }
 
   calculateSimilarity(str1, str2) {
+    // Skip comparison if strings are too different in length
+    const lengthDiff = Math.abs(str1.length - str2.length);
+    if (lengthDiff > Math.max(str1.length, str2.length) * 0.8) {
+      return 0;
+    }
+    
     const longer = str1.length > str2.length ? str1 : str2;
     const shorter = str1.length > str2.length ? str2 : str1;
     
     if (longer.length === 0) return 1.0;
     
+    // Use a more efficient algorithm for large strings
+    if (longer.length > 1000) {
+      return this.quickSimilarity(str1, str2);
+    }
+    
     const distance = this.levenshteinDistance(longer, shorter);
     return (longer.length - distance) / longer.length;
+  }
+
+  quickSimilarity(str1, str2) {
+    // Simple character frequency comparison for large strings
+    const freq1 = {};
+    const freq2 = {};
+    
+    for (const char of str1) {
+      freq1[char] = (freq1[char] || 0) + 1;
+    }
+    
+    for (const char of str2) {
+      freq2[char] = (freq2[char] || 0) + 1;
+    }
+    
+    const allChars = new Set([...Object.keys(freq1), ...Object.keys(freq2)]);
+    let similarity = 0;
+    let total = 0;
+    
+    for (const char of allChars) {
+      const f1 = freq1[char] || 0;
+      const f2 = freq2[char] || 0;
+      similarity += Math.min(f1, f2);
+      total += Math.max(f1, f2);
+    }
+    
+    return total > 0 ? similarity / total : 0;
   }
 
   levenshteinDistance(str1, str2) {
@@ -118,36 +161,56 @@ class RepoComparer {
       this.getRepoFiles(parsed2.owner, parsed2.repo)
     ]);
 
+    // Limit files to prevent memory issues
+    const maxFiles = 100;
+    const limitedFiles1 = files1.slice(0, maxFiles);
+    const limitedFiles2 = files2.slice(0, maxFiles);
+
+    if (files1.length > maxFiles || files2.length > maxFiles) {
+      console.log(chalk.yellow(`⚠️  Large repositories detected. Analyzing first ${maxFiles} files from each repo.`));
+    }
+
     const similarities = [];
     const identicalFiles = [];
     const spinner = ora('Analyzing file similarities').start();
 
-    for (const file1 of files1) {
-      const content1 = await this.getFileContent(parsed1.owner, parsed1.repo, file1.sha);
-      if (!content1) continue;
-
-      const normalized1 = this.normalizeCode(content1);
+    // Process in smaller batches to prevent memory overflow
+    const batchSize = 10;
+    
+    for (let i = 0; i < limitedFiles1.length; i += batchSize) {
+      const batch1 = limitedFiles1.slice(i, i + batchSize);
       
-      for (const file2 of files2) {
-        const content2 = await this.getFileContent(parsed2.owner, parsed2.repo, file2.sha);
-        if (!content2) continue;
+      for (const file1 of batch1) {
+        const content1 = await this.getFileContent(parsed1.owner, parsed1.repo, file1.sha);
+        if (!content1 || content1.length > 50000) continue; // Skip very large files
 
-        const normalized2 = this.normalizeCode(content2);
-        const similarity = this.calculateSimilarity(normalized1, normalized2);
+        const normalized1 = this.normalizeCode(content1);
+        
+        for (const file2 of limitedFiles2) {
+          const content2 = await this.getFileContent(parsed2.owner, parsed2.repo, file2.sha);
+          if (!content2 || content2.length > 50000) continue; // Skip very large files
 
-        if (similarity === 1.0) {
-          // Skip identical files but track them
-          identicalFiles.push({
-            file1: file1.path,
-            file2: file2.path
-          });
-        } else if (similarity > 0.7) {
-          similarities.push({
-            file1: file1.path,
-            file2: file2.path,
-            similarity: similarity
-          });
+          const normalized2 = this.normalizeCode(content2);
+          const similarity = this.calculateSimilarity(normalized1, normalized2);
+
+          if (similarity === 1.0) {
+            identicalFiles.push({
+              file1: file1.path,
+              file2: file2.path
+            });
+          } else if (similarity > 0.7) {
+            similarities.push({
+              file1: file1.path,
+              file2: file2.path,
+              similarity: similarity
+            });
+          }
         }
+      }
+      
+      // Force garbage collection between batches
+      if (global.gc) {
+        global.gc();
       }
     }
 
