@@ -21,7 +21,14 @@ class RepoComparer {
       const [owner, repo] = input.split('/');
       return { owner, repo };
     }
-    throw new Error(`Invalid GitHub repository format: ${input}`);
+    throw new Error(`ERROR INPUT - Invalid Repository Format
+Input: ${input}
+Type: Invalid GitHub repository format
+Solutions:
+1. Use format: owner/repository
+2. Use full URL: https://github.com/owner/repository
+3. Check for typos in repository name
+4. Ensure no extra characters or spaces`);
   }
 
   async getRepoFiles(owner, repo) {
@@ -45,13 +52,43 @@ class RepoComparer {
     } catch (error) {
       if (error.response?.status === 404) {
         spinner.fail(`Repository ${owner}/${repo} not found`);
-        throw new Error(`Repository ${owner}/${repo} does not exist`);
+        throw new Error(`ERROR 404 - Repository Not Found
+Repository: ${owner}/${repo}
+Type: Repository does not exist or is not accessible
+Solutions:
+1. Check the repository name spelling
+2. Verify the repository exists on GitHub
+3. Ensure the repository is public
+4. Try the full GitHub URL format`);
       } else if (error.response?.status === 403) {
-        spinner.fail(`Repository ${owner}/${repo} is private or rate limited`);
-        throw new Error(`Repository ${owner}/${repo} is private or you've hit the rate limit. Try again in a few minutes.`);
+        spinner.fail(`Repository ${owner}/${repo} access denied`);
+        throw new Error(`ERROR 403 - Access Forbidden
+Repository: ${owner}/${repo}
+Type: Private repository or API rate limit exceeded
+Solutions:
+1. Wait 1 hour for rate limit reset (60 requests/hour limit)
+2. Check if repository is public
+3. Try again later
+4. Use smaller repositories to reduce API calls`);
+      } else if (error.response?.status === 401) {
+        spinner.fail(`Repository ${owner}/${repo} authentication required`);
+        throw new Error(`ERROR 401 - Authentication Required
+Repository: ${owner}/${repo}
+Type: Repository requires authentication
+Solutions:
+1. Repository may be private
+2. Check repository visibility settings
+3. Ensure repository is public for comparison`);
       } else {
         spinner.fail(`Failed to fetch repository: ${error.message}`);
-        throw error;
+        throw new Error(`ERROR ${error.response?.status || 'UNKNOWN'} - Network/API Error
+Repository: ${owner}/${repo}
+Type: ${error.message}
+Solutions:
+1. Check your internet connection
+2. Try again in a few minutes
+3. Verify GitHub is accessible
+4. Check repository URL format`);
       }
     }
   }
@@ -173,7 +210,7 @@ class RepoComparer {
   }
 
   async compareRepositories(repo1, repo2) {
-    console.log(chalk.blue(`\n🔍 Comparing repositories:`));
+    console.log(chalk.blue(`\nComparing repositories:`));
     console.log(chalk.gray(`  Source: ${repo1}`));
     console.log(chalk.gray(`  Target: ${repo2}\n`));
 
@@ -191,7 +228,7 @@ class RepoComparer {
     const limitedFiles2 = files2.slice(0, maxFiles);
 
     if (files1.length > maxFiles || files2.length > maxFiles) {
-      console.log(chalk.yellow(`⚠️  Large repositories detected. Analyzing first ${maxFiles} files from each repo.`));
+      console.log(chalk.yellow(`WARNING: Large repositories detected. Analyzing first ${maxFiles} files from each repo.`));
     }
 
     const similarities = [];
@@ -245,12 +282,12 @@ class RepoComparer {
   displayResults(results) {
     const { similarities, identicalFiles } = results;
     
-    console.log(chalk.yellow(`\n📊 Similarity Report\n`));
+    console.log(chalk.yellow(`\nSimilarity Report\n`));
     
     if (identicalFiles.length > 0) {
       console.log(chalk.blue(`Identical files (skipped): ${identicalFiles.length}`));
       identicalFiles.slice(0, 3).forEach(match => {
-        console.log(chalk.gray(`  ${match.file1} ↔ ${match.file2}`));
+        console.log(chalk.gray(`  ${match.file1} <-> ${match.file2}`));
       });
       if (identicalFiles.length > 3) {
         console.log(chalk.gray(`  ... and ${identicalFiles.length - 3} more\n`));
@@ -260,7 +297,7 @@ class RepoComparer {
     }
     
     if (similarities.length === 0) {
-      console.log(chalk.green('✅ No significant similarities found'));
+      console.log(chalk.green('No significant similarities found'));
       return;
     }
 
@@ -271,24 +308,24 @@ class RepoComparer {
         const color = match.similarity > 0.9 ? 'red' : match.similarity > 0.8 ? 'yellow' : 'cyan';
         
         console.log(chalk[color](`${percentage}% similarity`));
-        console.log(chalk.gray(`  ${match.file1} ↔ ${match.file2}\n`));
+        console.log(chalk.gray(`  ${match.file1} <-> ${match.file2}\n`));
       });
 
     const avgSimilarity = similarities.reduce((sum, s) => sum + s.similarity, 0) / similarities.length;
     const highSimilarity = similarities.filter(s => s.similarity > 0.9).length;
     
-    console.log(chalk.blue(`📈 Summary:`));
+    console.log(chalk.blue(`Summary:`));
     console.log(chalk.gray(`  Similar files: ${similarities.length}`));
     console.log(chalk.gray(`  Identical files (skipped): ${identicalFiles.length}`));
     console.log(chalk.gray(`  High similarity (>90%): ${highSimilarity}`));
     console.log(chalk.gray(`  Average similarity: ${(avgSimilarity * 100).toFixed(1)}%`));
     
     if (avgSimilarity > 0.8) {
-      console.log(chalk.red('\n⚠️  High plagiarism risk detected!'));
+      console.log(chalk.red('\nHigh plagiarism risk detected!'));
     } else if (avgSimilarity > 0.6) {
-      console.log(chalk.yellow('\n⚠️  Moderate similarity detected'));
+      console.log(chalk.yellow('\nModerate similarity detected'));
     } else {
-      console.log(chalk.green('\n✅ Low plagiarism risk'));
+      console.log(chalk.green('\nLow plagiarism risk'));
     }
   }
 }
