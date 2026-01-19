@@ -43,8 +43,16 @@ class RepoComparer {
       spinner.succeed(`Found ${files.length} source files`);
       return files;
     } catch (error) {
-      spinner.fail(`Failed to fetch repository: ${error.message}`);
-      throw error;
+      if (error.response?.status === 404) {
+        spinner.fail(`Repository ${owner}/${repo} not found`);
+        throw new Error(`Repository ${owner}/${repo} does not exist`);
+      } else if (error.response?.status === 403) {
+        spinner.fail(`Repository ${owner}/${repo} is private or rate limited`);
+        throw new Error(`Repository ${owner}/${repo} is private or you've hit the rate limit. Try again in a few minutes.`);
+      } else {
+        spinner.fail(`Failed to fetch repository: ${error.message}`);
+        throw error;
+      }
     }
   }
 
@@ -146,6 +154,22 @@ class RepoComparer {
     }
     
     return matrix[str2.length][str1.length];
+  }
+
+  async validateRepository(owner, repo) {
+    try {
+      const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}`);
+      return {
+        exists: true,
+        isPrivate: response.data.private,
+        name: response.data.full_name
+      };
+    } catch (error) {
+      return {
+        exists: false,
+        error: error.response?.status === 404 ? 'not found' : 'access denied'
+      };
+    }
   }
 
   async compareRepositories(repo1, repo2) {
