@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 
 $packageName = 'repodiffmatch'
-$url = 'https://github.com/tungle2709/repo-compare/archive/main.zip'
+$url = 'https://github.com/tungle2709/RepoDiffMatch/archive/main.zip'
 $installDir = Join-Path $env:LOCALAPPDATA 'RepoDiffMatch'
 $binDir = Join-Path $env:LOCALAPPDATA 'RepoDiffMatch\bin'
 
@@ -25,7 +25,7 @@ Invoke-WebRequest -Uri $url -OutFile $zipPath
 
 Write-Host "Extracting..."
 Expand-Archive -Path $zipPath -DestinationPath $env:TEMP -Force
-Copy-Item -Path "$env:TEMP\repo-compare-main\*" -Destination $installDir -Recurse -Force
+Copy-Item -Path "$env:TEMP\RepoDiffMatch-main\*" -Destination $installDir -Recurse -Force
 
 # Install dependencies
 Set-Location $installDir
@@ -49,7 +49,7 @@ if ($userPath -notlike "*$binDir*") {
 
 # Cleanup
 Remove-Item $zipPath -Force
-Remove-Item "$env:TEMP\repo-compare-main" -Recurse -Force
+Remove-Item "$env:TEMP\RepoDiffMatch-main" -Recurse -Force
 
 Write-Host "RepoDiffMatch installed successfully!"
 Write-Host "Restart your terminal and use: repodm --version"

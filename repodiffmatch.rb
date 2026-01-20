@@ -1,7 +1,7 @@
 class Repodiffmatch < Formula
   desc "CLI tool to compare GitHub repositories for plagiarism detection"
-  homepage "https://github.com/tungle2709/repo-compare"
-  url "https://github.com/tungle2709/repo-compare/archive/v1.0.0.tar.gz"
+  homepage "https://github.com/tungle2709/RepoDiffMatch"
+  url "https://github.com/tungle2709/RepoDiffMatch/archive/v1.0.0.tar.gz"
   sha256 "PLACEHOLDER_SHA256"
   license "MIT"
 

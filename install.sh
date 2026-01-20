@@ -5,7 +5,7 @@
 
 set -e
 
-REPO_URL="https://github.com/tungle2709/repo-compare"
+REPO_URL="https://github.com/tungle2709/RepoDiffMatch"
 INSTALL_DIR="$HOME/.repodiffmatch"
 BIN_DIR="$HOME/.local/bin"
 
@@ -34,8 +34,8 @@ else
     echo "Downloading repository..."
     curl -L "$REPO_URL/archive/main.zip" -o /tmp/repodiffmatch.zip
     unzip -q /tmp/repodiffmatch.zip -d /tmp/
-    cp -r /tmp/repo-compare-main/* "$INSTALL_DIR/"
-    rm -rf /tmp/repodiffmatch.zip /tmp/repo-compare-main
+    cp -r /tmp/RepoDiffMatch-main/* "$INSTALL_DIR/"
+    rm -rf /tmp/repodiffmatch.zip /tmp/RepoDiffMatch-main
 fi
 
 # Install dependencies

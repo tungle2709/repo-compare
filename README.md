@@ -20,12 +20,12 @@ A powerful command-line tool to compare GitHub repositories and detect potential
 
 **macOS/Linux:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/tungle2709/repo-compare/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/tungle2709/RepoDiffMatch/main/install.sh | bash
 ```
 
 **Windows (PowerShell):**
 ```powershell
-iwr -useb https://raw.githubusercontent.com/tungle2709/repo-compare/main/install.ps1 | iex
+iwr -useb https://raw.githubusercontent.com/tungle2709/RepoDiffMatch/main/install.ps1 | iex
 ```
 
 ### Package Managers
@@ -46,8 +46,8 @@ npm install -g repodiffmatch
 
 1. **Clone the repository:**
 ```bash
-git clone https://github.com/tungle2709/repo-compare.git
-cd repo-compare
+git clone https://github.com/tungle2709/RepoDiffMatch.git
+cd RepoDiffMatch
 ```
 
 2. **Install dependencies:**
@@ -209,7 +209,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Quick uninstall:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/tungle2709/repo-compare/main/uninstall.sh | bash
+curl -fsSL https://raw.githubusercontent.com/tungle2709/RepoDiffMatch/main/uninstall.sh | bash
 ```
 
 **npm:**
