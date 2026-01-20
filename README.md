@@ -147,6 +147,86 @@ repodm --version
 - Go (.go)
 - Rust (.rs)
 
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        RepoDiffMatch CLI                        │
+└─────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     Command Parser (Commander.js)              │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │   compare cmd   │  │   --help cmd    │  │  --version cmd  │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      RepoComparer Class                        │
+│                                                                 │
+│  ┌─────────────────┐           ┌─────────────────┐             │
+│  │  parseGitHubUrl │           │ compareRepos    │             │
+│  │                 │           │                 │             │
+│  │ • URL parsing   │           │ • Batch process │             │
+│  │ • Format check  │           │ • Memory mgmt   │             │
+│  └─────────────────┘           └─────────────────┘             │
+└─────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     GitHub API Integration                      │
+│                                                                 │
+│  ┌─────────────────┐           ┌─────────────────┐             │
+│  │  getRepoFiles   │           │ getFileContent  │             │
+│  │                 │           │                 │             │
+│  │ • Fetch tree    │           │ • Get blob data │             │
+│  │ • Filter files  │           │ • Handle errors │             │
+│  │ • Error handle  │           │ • Size limits   │             │
+│  └─────────────────┘           └─────────────────┘             │
+└─────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Code Analysis Engine                         │
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │ normalizeCode   │  │calculateSimilar │  │ quickSimilarity │ │
+│  │                 │  │                 │  │                 │ │
+│  │ • Remove comments│  │ • Levenshtein   │  │ • Char frequency│ │
+│  │ • Strip format  │  │ • Distance calc │  │ • Large files   │ │
+│  │ • Size limits   │  │ • Similarity %  │  │ • Fast compare  │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      Results Processing                         │
+│                                                                 │
+│  ┌─────────────────┐           ┌─────────────────┐             │
+│  │ displayResults  │           │ Risk Assessment │             │
+│  │                 │           │                 │             │
+│  │ • Color coding  │           │ • High (>80%)   │             │
+│  │ • Formatting    │           │ • Moderate      │             │
+│  │ • Statistics    │           │ • Low risk      │             │
+│  └─────────────────┘           └─────────────────┘             │
+└─────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                        Terminal Output                          │
+│                                                                 │
+│  • Similarity percentages with color coding                    │
+│  • File-by-file comparison results                             │
+│  • Summary statistics and risk assessment                      │
+│  • Error messages with solutions                               │
+└─────────────────────────────────────────────────────────────────┘
+
+Data Flow:
+Input URLs → Parse → Fetch Files → Normalize Code → Compare → Results
+```
+
 ## How It Works
 
 1. **Repository Fetching**: Uses GitHub API to recursively fetch all source files
@@ -156,6 +236,29 @@ repodm --version
 5. **Identical File Detection**: Identifies and skips 100% identical files
 6. **Risk Assessment**: Analyzes patterns and provides plagiarism risk evaluation
 7. **Report Generation**: Creates detailed, color-coded similarity reports
+
+## Core Components
+
+### CLI Interface (`index.js`)
+- **Commander.js**: Command-line argument parsing and help system
+- **Entry Point**: Main application logic and error handling
+- **Memory Management**: Node.js heap optimization for large repositories
+
+### RepoComparer Class
+- **URL Parser**: Handles both GitHub URLs and owner/repo format
+- **API Client**: GitHub REST API integration with rate limit handling
+- **Batch Processor**: Memory-efficient file processing in chunks
+
+### Analysis Engine
+- **Code Normalizer**: Strips comments, formatting, and normalizes syntax
+- **Similarity Calculator**: Levenshtein distance algorithm for precise comparison
+- **Quick Similarity**: Character frequency analysis for large files
+- **Filter System**: Excludes common directories and binary files
+
+### Output System
+- **Chalk.js**: Color-coded terminal output for better readability
+- **Ora.js**: Progress spinners and status indicators
+- **Results Formatter**: Structured similarity reports and statistics
 
 ## Requirements
 
